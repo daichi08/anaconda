@@ -12,6 +12,7 @@ def calc_B_T(dt, theta):
     B_T = ([[dt*math.cos(theta), dt*math.sin(theta),  0, 1, 0],
            [0                 , 0                 , dt, 0, 1]])
     return B_T
+
 ## 角度補正用
 def correction_ang(angle):
     if angle > math.pi:
@@ -56,22 +57,16 @@ class CartRobot():
         self.traj   = []
         #### 制御周期
         self.dt     = 0.05
-        #### 機体パラメータ(ROSに移行する場合は消す)
+
+        '''GPIO'''
         self.u_r = 0
         self.u_l = 0
         self.u_r_hist = [self.u_r]
         self.u_l_hist = [self.u_l]
-
         self.pi = pigpio.pi()
-        self.pi.set_mode(18, pigpio.OUTPUT)
-        self.pi.set_mode(19, pigpio.OUTPUT)
-        self.pi.set_mode(20, pigpio.OUTPUT)
-        self.pi.set_mode(21, pigpio.OUTPUT)
+        self.change_gpio_mode(pi.OUTPUT)
+        self.stop_gpio()
 
-        self.pi.write(18, 0)
-        self.pi.write(19, 0)
-        self.pi.write(20, 0)
-        self.pi.write(21, 0)
 
     ### 状態ベクトルの更新用
     def update_status(self, u):
@@ -85,15 +80,14 @@ class CartRobot():
 
         return next_status
 
-    ### 周波数への変換(ROSに移行する場合は切り分ける)
+    '''GPIO'''
     def calc_freq(self, v, omega):
         R = 0.0036 * math.pi/180
         r = 0.15/2
         d = 0.66/2
 
-        ### v = R*r/2 * (u_r + u_l), omega = R*r/(2*d) * (u_r - u_l)で計算
-        u_r = int((v+d*omega)/(R*r))
-        u_l = int((v-d*omega)/(R*r))
+        u_r = round((v+d*omega)/(R*r))
+        u_l = round((v-d*omega)/(R*r))
 
         self.u_r = u_r
         self.u_l = u_l
@@ -116,6 +110,17 @@ class CartRobot():
         self.pi.hardware_PWM(19, u_r_input, 500000)
         self.pi.hardware_PWM(18, u_l_input, 500000)
         return u_r, u_l
+    
+    '''GPIO'''
+    def change_gpio_mode(self, state):
+        for i in range(18, 22):
+            self.pi.set_mode(i, state)
+    
+    '''GPIO'''
+    def stop_gpio(self):
+        for i in range(18, 22):
+            self.pi.write(i, 0)
+        
 
 ## シミュレーション用ロボットモデル
 class SimRobotModel():
@@ -326,13 +331,11 @@ class MainController():
             paths, opt_path = self.controller.calc_input(goal, self.cartbot.status, self.obstacles)
             u = opt_path[3:5]
             self.cartbot.update_status(u)
-            #### ROSの場合は消す
-            u_r, u_l = self.cartbot.calc_freq(u[0], u[1])
+            '''GPIO'''
+            self.cartbot.calc_freq(u[0], u[1])
 
-        self.cartbot.pi.write(18, 0)
-        self.cartbot.pi.write(19, 0)
-        self.cartbot.pi.write(20, 0)
-        self.cartbot.pi.write(21, 0)
+        '''GPIO'''
+        self.cartbot.stop_gpio()
 
         return self.cartbot.status
 
