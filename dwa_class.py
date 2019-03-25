@@ -185,7 +185,7 @@ class DWA():
 
         total_score = self.weight_ang * normalize_angs +                      self.weight_vel * normalize_vels +                      self.weight_obs * normalize_obs
         max_score_index = list(total_score).index(max(total_score))
-        opt_path = paths[max_score_index][-1]
+        opt_path = paths[max_score_index]
 
         return opt_path
 
@@ -275,7 +275,7 @@ class MainController():
         for n in range(max_step):
             goal  = self.const_goal.update_position()
             paths, opt_path = self.controller.calc_input(goal, self.cartbot.status, self.obstacles)
-            u = opt_path[3:5]
+            u = opt_path[-1][3:5]
             self.cartbot.update_status(u)
 
         return self.cartbot.status
