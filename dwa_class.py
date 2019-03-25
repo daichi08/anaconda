@@ -1,9 +1,3 @@
-
-# coding: utf-8
-
-# In[23]:
-
-
 #! /usr/bin/env python
 # -*- coding: utf-8 -*-
 
@@ -322,10 +316,3 @@ if __name__ == '__main__':
     finished = time.time() -start
     print("{0}".format(finished) + "[sec]")
     print(status)
-
-
-# In[21]:
-
-
-cartbot.u_l_hist
-
