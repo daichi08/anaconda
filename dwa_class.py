@@ -1,3 +1,9 @@
+
+# coding: utf-8
+
+# In[23]:
+
+
 #! /usr/bin/env python
 # -*- coding: utf-8 -*-
 
@@ -55,6 +61,11 @@ class CartRobot():
         self.traj   = []
         #### 制御周期
         self.dt     = 0.5
+        #### 機体パラメータ(ROSに移行する場合は消す)
+        self.u_r = 0
+        self.u_l = 0
+        self.u_r_hist = [self.u_r]
+        self.u_l_hist = [self.u_l]
 
     ### 状態ベクトルの更新用
     def update_status(self, u):
@@ -68,14 +79,31 @@ class CartRobot():
 
         return next_status
 
+    ### 周波数への変換(ROSに移行する場合は切り分ける)
+    def calc_freq(self, v, omega):
+        R = 0.0036 * math.pi/180
+        r = 0.15/2
+        d = 0.66/2
+
+        ### v = R*r/2 * (u_r + u_l), omega = R*r/(2*d) * (u_r - u_l)で計算
+        u_r = int((v+d*omega)/(R*r))
+        u_l = int((v-d*omega)/(R*r))
+
+        self.u_r = u_r
+        self.u_l = u_l
+        self.u_r_hist.append(u_r)
+        self.u_l_hist.append(u_l)
+
+        return u_r, u_l
+
 ## シミュレーション用ロボットモデル
 class SimRobotModel():
     ### コンストラクタ
     def __init__(self):
         #### 速度に関する制限
-        self.max_vel =  1.4
-        self.min_vel =  0.0
-        self.max_acc = 10.0
+        self.max_vel = 1.4
+        self.min_vel = 0.0
+        self.max_acc = 9.0
 
         #### 回転速度に関する制限
         self.max_ang_vel =  60 * math.pi/180
@@ -185,7 +213,7 @@ class DWA():
 
         total_score = self.weight_ang * normalize_angs +                      self.weight_vel * normalize_vels +                      self.weight_obs * normalize_obs
         max_score_index = list(total_score).index(max(total_score))
-        opt_path = paths[max_score_index]
+        opt_path = paths[max_score_index][-1]
 
         return opt_path
 
@@ -269,27 +297,35 @@ class MainController():
     ### 走行中の処理
     def runnning(self):
         goal_flg = False
-        max_step  = 300
+        max_step  = 100
 
         # while not goal_flg:
         for n in range(max_step):
             goal  = self.const_goal.update_position()
             paths, opt_path = self.controller.calc_input(goal, self.cartbot.status, self.obstacles)
-            u = opt_path[-1][3:5]
+            u = opt_path[3:5]
             self.cartbot.update_status(u)
+            #### ROSの場合は消す
+            u_r, u_l = self.cartbot.calc_freq(u[0], u[1])
 
         return self.cartbot.status
 
 def main():
     controller = MainController()
-    finished_status = controller.runnning()
+    status = controller.runnning()
 
-    return finished_status
+    return status
 
 if __name__ == '__main__':
     start = time.time()
-    finished_status = main()
+    status = main()
     finished = time.time() -start
     print("{0}".format(finished) + "[sec]")
-    print(finished_status)
+    print(status)
+
+
+# In[21]:
+
+
+cartbot.u_l_hist
 
