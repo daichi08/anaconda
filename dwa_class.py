@@ -1,9 +1,10 @@
-#! /usr/bin/env python
+#! /usr/bin/env python3
 # -*- coding: utf-8 -*-
 
 import numpy as np
 import math
 import time
+import pigpio
 
 # 関数群
 ## 入力にかかる行列計算用
@@ -54,12 +55,23 @@ class CartRobot():
         #### 軌跡記録用
         self.traj   = []
         #### 制御周期
-        self.dt     = 0.5
+        self.dt     = 0.05
         #### 機体パラメータ(ROSに移行する場合は消す)
         self.u_r = 0
         self.u_l = 0
         self.u_r_hist = [self.u_r]
         self.u_l_hist = [self.u_l]
+
+        self.pi = pigpio.pi()
+        self.pi.set_mode(18, pigpio.OUTPUT)
+        self.pi.set_mode(19, pigpio.OUTPUT)
+        self.pi.set_mode(20, pigpio.OUTPUT)
+        self.pi.set_mode(21, pigpio.OUTPUT)
+
+        self.pi.write(18, 0)
+        self.pi.write(19, 0)
+        self.pi.write(20, 0)
+        self.pi.write(21, 0)
 
     ### 状態ベクトルの更新用
     def update_status(self, u):
@@ -88,6 +100,21 @@ class CartRobot():
         self.u_r_hist.append(u_r)
         self.u_l_hist.append(u_l)
 
+        if u_r < 0:
+            self.pi.write(20, 0)
+            u_r_input = abs(u_r)
+        else:
+            self.pi.write(20, 1)
+            u_r_input = u_r
+        if u_l < 0:
+            self.pi.write(21, 1)
+            u_l_input = abs(u_l)
+        else:
+            self.pi.write(21, 0)
+            u_l_input = u_l
+
+        self.pi.hardware_PWM(19, u_r_input, 500000)
+        self.pi.hardware_PWM(18, u_l_input, 500000)
         return u_r, u_l
 
 ## シミュレーション用ロボットモデル
@@ -95,14 +122,14 @@ class SimRobotModel():
     ### コンストラクタ
     def __init__(self):
         #### 速度に関する制限
-        self.max_vel = 1.4
+        self.max_vel = 0.5
         self.min_vel = 0.0
-        self.max_acc = 9.0
+        self.max_acc = 3.0
 
         #### 回転速度に関する制限
-        self.max_ang_vel =  60 * math.pi/180
-        self.min_ang_vel = -60 * math.pi/180
-        self.max_ang_acc = 120 * math.pi/180
+        self.max_ang_vel =  15 * math.pi/180
+        self.min_ang_vel = -15 * math.pi/180
+        self.max_ang_acc =  30 * math.pi/180
 
     ### 取りうる状態ベクトルの計算
     def predict_status(self, u, status, dt, pre_step):
@@ -128,7 +155,7 @@ class DWA():
         self.delta_ang_vel = math.pi/180
 
         #### シミュレーションの時間、間隔およびステップの宣言
-        self.pre_time  = 2
+        self.pre_time  = 1
         self.samp_time = 0.1
         self.pre_step  = int(self.pre_time/self.samp_time)
 
@@ -264,7 +291,7 @@ class Goal():
     ### コンストラクタ
     def __init__(self):
         #### ゴール位置
-        self.position = [10, 10]
+        self.position = [6, 4]
         #### ゴール位置の記録用
         self.traj_position = []
 
@@ -286,12 +313,12 @@ class MainController():
         self.cartbot    = CartRobot(0, 0, math.pi/2)
         self.const_goal = Goal()
         self.controller = DWA()
-        self.obstacles  = [Obstacle(3, 3), Obstacle(5,5), Obstacle(8,4)]
+        self.obstacles  = [Obstacle(3, 3), Obstacle(2,1), Obstacle(5,3), Obstacle(1, 3)]
 
     ### 走行中の処理
     def runnning(self):
         goal_flg = False
-        max_step  = 100
+        max_step  = 400
 
         # while not goal_flg:
         for n in range(max_step):
@@ -301,6 +328,11 @@ class MainController():
             self.cartbot.update_status(u)
             #### ROSの場合は消す
             u_r, u_l = self.cartbot.calc_freq(u[0], u[1])
+
+        self.cartbot.pi.write(18, 0)
+        self.cartbot.pi.write(19, 0)
+        self.cartbot.pi.write(20, 0)
+        self.cartbot.pi.write(21, 0)
 
         return self.cartbot.status
 
