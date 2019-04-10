@@ -64,7 +64,7 @@ class CartRobot():
         self.u_r_hist = [self.u_r]
         self.u_l_hist = [self.u_l]
         self.pi = pigpio.pi()
-        self.change_gpio_mode(pi.OUTPUT)
+        self.change_gpio_mode(pigpio.OUTPUT)
         self.stop_gpio()
 
 
@@ -86,8 +86,8 @@ class CartRobot():
         r = 0.15/2
         d = 0.66/2
 
-        u_r = round((v+d*omega)/(R*r))
-        u_l = round((v-d*omega)/(R*r))
+        u_r = int((v+d*omega)/(R*r))
+        u_l = int((v-d*omega)/(R*r))
 
         self.u_r = u_r
         self.u_l = u_l
@@ -110,17 +110,17 @@ class CartRobot():
         self.pi.hardware_PWM(19, u_r_input, 500000)
         self.pi.hardware_PWM(18, u_l_input, 500000)
         return u_r, u_l
-    
+
     '''GPIO'''
     def change_gpio_mode(self, state):
         for i in range(18, 22):
             self.pi.set_mode(i, state)
-    
+
     '''GPIO'''
     def stop_gpio(self):
         for i in range(18, 22):
             self.pi.write(i, 0)
-        
+
 
 ## シミュレーション用ロボットモデル
 class SimRobotModel():
