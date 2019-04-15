@@ -1,6 +1,19 @@
 import math
 import numpy as np
 
+A = [
+    [1, 0, 0, 0, 0],
+    [0, 1, 0, 0, 0],
+    [0, 0, 1, 0, 0],
+    [0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0]
+]
+
+def calc_B_T(dt, theta):
+    B_T = ([[dt*math.cos(theta), dt*math.sin(theta),  0, 1, 0],
+           [0                 , 0                 , dt, 0, 1]])
+    return B_T
+
 class CartRobot():
     ### コンストラクタ
     def __init__(self, x, y, th):
@@ -8,6 +21,7 @@ class CartRobot():
         self.status = [x, y, th, 0, 0]
         #### 制御周期
         self.dt     = 0.5
+        self.traj   = []
 
     ### 状態ベクトルの更新用
     def update_status(self, u):

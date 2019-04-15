@@ -4,7 +4,7 @@
 import math
 from scipy.stats import norm
 
-AREA_SIZE = 10
+AREA_SIZE = 20
 GRID_SIZE = 0.2
 ANGLE_RES = 3 * math.pi/180
 
@@ -71,10 +71,11 @@ def ray_casting(obstacles):
         y_i = int(round((y-y_min)/GRID_SIZE))
         obstacles_ids.append([x_i, y_i])
         
+        # 一旦レイキャスティングなしでやってみる
         for grid in grid_list:
             if grid.dist > dist:
                 if grid_map[grid.x_i][grid.y_i] < 1:
-                    grid_map[grid.x_i][grid.y_i] = 0.5
+                    grid_map[grid.x_i][grid.y_i] = 1
         grid_map[x_i][y_i] = 1
     return x_min, y_min, x_range, y_range, grid_map, obstacles_ids
 
@@ -98,16 +99,14 @@ def main(paths, obstacles):
         grid_score = 1.0 - norm.cdf(min_dist, 0.0, 3.0)
         grid_map[path_xid][path_yid] += grid_score
 
-    return grid_map
-    
-
+    return grid_map, x_min, y_min, GRID_SIZE
 
 if __name__ == "__main__":
     paths = [[1, 1, math.pi/2, 0, 1],
              [0, 1, math.pi/2, 1, 1],
              [1.5, 2, math.pi/2, 0,1]]
     obstacles = [[3,0],[10, 10]]
-    grid_map = main(paths, obstacles)
+    grid_map, x_min, y_min, GRID_SIZE = main(paths, obstacles)
     
     import csv
     with open("gridmap.csv", "w") as file:
