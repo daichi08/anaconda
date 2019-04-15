@@ -11,16 +11,6 @@ def calc_B_T(dt, theta):
     B_T = ([[dt*math.cos(theta), dt*math.sin(theta),  0, 1, 0],
            [0                 , 0                 , dt, 0, 1]])
     return B_T
-## 角度補正用
-def correction_ang(angle):
-    if angle > math.pi:
-        while angle > math.pi:
-            angle -= 2*math.pi
-    elif angle < -math.pi:
-        while angle < -math.pi:
-            angle += 2*math.pi
-
-    return angle
 
 # 変数群
 ## 状態ベクトルにかかる行列
@@ -116,21 +106,10 @@ class DWA():
 
         return paths
 
-## メイン制御
-class MainController():
-    ### コンストラクタ
-    def __init__(self):
-        self.controller = DWA()
-
-    ### 走行中の処理
-    def runnning(self, status):
-        paths = self.controller.make_path(status)
-
-        return paths
-
 def main(status):
-    controller = MainController()
-    paths = controller.runnning(status)
+    dwa_sim = DWA()
+    paths = dwa_sim.make_path(status)
+    
     return paths
     
 if __name__ == '__main__':

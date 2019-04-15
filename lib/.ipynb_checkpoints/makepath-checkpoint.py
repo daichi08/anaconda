@@ -11,16 +11,6 @@ def calc_B_T(dt, theta):
     B_T = ([[dt*math.cos(theta), dt*math.sin(theta),  0, 1, 0],
            [0                 , 0                 , dt, 0, 1]])
     return B_T
-## 角度補正用
-def correction_ang(angle):
-    if angle > math.pi:
-        while angle > math.pi:
-            angle -= 2*math.pi
-    elif angle < -math.pi:
-        while angle < -math.pi:
-            angle += 2*math.pi
-
-    return angle
 
 # 変数群
 ## 状態ベクトルにかかる行列
@@ -33,26 +23,6 @@ A = [
 ]
 
 # クラス群
-## 実際のロボット用
-class CartRobot():
-    ### コンストラクタ
-    def __init__(self, x, y, th, v, omega):
-        #### 状態ベクトル
-        self.status = [x, y, th, v, omega]
-        #### 制御周期
-        self.dt     = 0.5
-
-    ### 状態ベクトルの更新用
-    def update_status(self, u):
-        B_T = calc_B_T(self.dt, self.status[2])
-        next_status = list(
-            np.dot(self.status, A) +
-            np.dot(u, B_T)
-        )
-        self.traj.append(self.status)
-        self.status = next_status
-
-        return next_status
 
 ## シミュレーション用ロボットモデル
 class SimRobotModel():
@@ -136,22 +106,10 @@ class DWA():
 
         return paths
 
-## メイン制御
-class MainController():
-    ### コンストラクタ
-    def __init__(self, x, y, th, v, omega):
-        self.cartbot    = CartRobot(x, y, th, v, omega)
-        self.controller = DWA()
-
-    ### 走行中の処理
-    def runnning(self):
-        paths = self.controller.make_path(self.cartbot.status)
-
-        return paths
-
-def main(x=0, y=0, th=math.pi/2, v=0, omega=0):
-    controller = MainController(x, y, th, v, omega)
-    paths = controller.runnning()
+def main(status):
+    dwa_sim = DWA()
+    paths = dwa_sim.make_path(status)
+    
     return paths
     
 if __name__ == '__main__':
