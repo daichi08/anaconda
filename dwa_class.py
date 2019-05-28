@@ -4,7 +4,7 @@
 import numpy as np
 import math
 import time
-import pigpio
+#import pigpio
 
 # 関数群
 ## 入力にかかる行列計算用
@@ -59,13 +59,13 @@ class CartRobot():
         self.dt     = 0.05
 
         '''GPIO'''
-        self.u_r = 0
-        self.u_l = 0
-        self.u_r_hist = [self.u_r]
-        self.u_l_hist = [self.u_l]
-        self.pi = pigpio.pi()
-        self.change_gpio_mode(pigpio.OUTPUT)
-        self.stop_gpio()
+#        self.u_r = 0
+#        self.u_l = 0
+#        self.u_r_hist = [self.u_r]
+#        self.u_l_hist = [self.u_l]
+#        self.pi = pigpio.pi()
+#        self.change_gpio_mode(pigpio.OUTPUT)
+#        self.stop_gpio()
 
 
     ### 状態ベクトルの更新用
@@ -81,45 +81,45 @@ class CartRobot():
         return next_status
 
     '''GPIO'''
-    def calc_freq(self, v, omega):
-        R = 0.0036 * math.pi/180
-        r = 0.15/2
-        d = 0.66/2
+#    def calc_freq(self, v, omega):
+#        R = 0.0036 * math.pi/180
+#        r = 0.15/2
+#        d = 0.66/2
 
-        u_r = int((v+d*omega)/(R*r))
-        u_l = int((v-d*omega)/(R*r))
+#        u_r = int((v+d*omega)/(R*r))
+#        u_l = int((v-d*omega)/(R*r))
 
-        self.u_r = u_r
-        self.u_l = u_l
-        self.u_r_hist.append(u_r)
-        self.u_l_hist.append(u_l)
+#        self.u_r = u_r
+#        self.u_l = u_l
+#        self.u_r_hist.append(u_r)
+#        self.u_l_hist.append(u_l)
 
-        if u_r < 0:
-            self.pi.write(20, 0)
-            u_r_input = abs(u_r)
-        else:
-            self.pi.write(20, 1)
-            u_r_input = u_r
-        if u_l < 0:
-            self.pi.write(21, 1)
-            u_l_input = abs(u_l)
-        else:
-            self.pi.write(21, 0)
-            u_l_input = u_l
+#        if u_r < 0:
+#            self.pi.write(20, 0)
+#            u_r_input = abs(u_r)
+#        else:
+#            self.pi.write(20, 1)
+#            u_r_input = u_r
+#        if u_l < 0:
+#            self.pi.write(21, 1)
+#            u_l_input = abs(u_l)
+#        else:
+#            self.pi.write(21, 0)
+#            u_l_input = u_l
 
-        self.pi.hardware_PWM(19, u_r_input, 500000)
-        self.pi.hardware_PWM(18, u_l_input, 500000)
-        return u_r, u_l
+#        self.pi.hardware_PWM(19, u_r_input, 500000)
+#        self.pi.hardware_PWM(18, u_l_input, 500000)
+#        return u_r, u_l
+
+#    '''GPIO'''
+#    def change_gpio_mode(self, state):
+#        for i in range(18, 22):
+#            self.pi.set_mode(i, state)
 
     '''GPIO'''
-    def change_gpio_mode(self, state):
-        for i in range(18, 22):
-            self.pi.set_mode(i, state)
-
-    '''GPIO'''
-    def stop_gpio(self):
-        for i in range(18, 22):
-            self.pi.write(i, 0)
+#    def stop_gpio(self):
+#        for i in range(18, 22):
+#            self.pi.write(i, 0)
 
 
 ## シミュレーション用ロボットモデル
@@ -127,14 +127,14 @@ class SimRobotModel():
     ### コンストラクタ
     def __init__(self):
         #### 速度に関する制限
-        self.max_vel = 0.5
+        self.max_vel = 1.4
         self.min_vel = 0.0
-        self.max_acc = 3.0
+        self.max_acc = 9.0
 
         #### 回転速度に関する制限
-        self.max_ang_vel =  15 * math.pi/180
-        self.min_ang_vel = -15 * math.pi/180
-        self.max_ang_acc =  30 * math.pi/180
+        self.max_ang_vel =  60 * math.pi/180
+        self.min_ang_vel = -60 * math.pi/180
+        self.max_ang_acc =  120 * math.pi/180
 
     ### 取りうる状態ベクトルの計算
     def predict_status(self, u, status, dt, pre_step):
@@ -160,7 +160,7 @@ class DWA():
         self.delta_ang_vel = math.pi/180
 
         #### シミュレーションの時間、間隔およびステップの宣言
-        self.pre_time  = 1
+        self.pre_time  = 2
         self.samp_time = 0.1
         self.pre_step  = int(self.pre_time/self.samp_time)
 
@@ -296,7 +296,7 @@ class Goal():
     ### コンストラクタ
     def __init__(self):
         #### ゴール位置
-        self.position = [6, 4]
+        self.position = [10, 10]
         #### ゴール位置の記録用
         self.traj_position = []
 
@@ -323,7 +323,7 @@ class MainController():
     ### 走行中の処理
     def runnning(self):
         goal_flg = False
-        max_step  = 400
+        max_step  = 100
 
         # while not goal_flg:
         for n in range(max_step):
@@ -332,10 +332,10 @@ class MainController():
             u = opt_path[3:5]
             self.cartbot.update_status(u)
             '''GPIO'''
-            self.cartbot.calc_freq(u[0], u[1])
+            #self.cartbot.calc_freq(u[0], u[1])
 
         '''GPIO'''
-        self.cartbot.stop_gpio()
+        #self.cartbot.stop_gpio()
 
         return self.cartbot.status
 
